@@ -1,0 +1,1177 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naol Editer - CapCut Style Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Noto Sans Ethiopic for Amharic/Oromo rendering support -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        capcut: {
+                            bg: '#0e0f12',
+                            panel: '#181a20',
+                            card: '#22252e',
+                            border: '#2e323e',
+                            accent: '#2563eb', // Vibrant blue
+                            cyan: '#00f2fe',
+                            teal: '#4facfe',
+                            textMuted: '#9ca3af'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans Ethiopic', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #181a20;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+
+        /* Color Wheel Control styling */
+        .color-wheel {
+            background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+            border-radius: 50%;
+            cursor: crosshair;
+        }
+
+        .range-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            border-radius: 2px;
+            background: #374151;
+            outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+        }
+
+        /* Glassmorphism for floating overlays */
+        .glass-panel {
+            background: rgba(24, 26, 32, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Pulse glowing animation for active tracking points */
+        @keyframes trackPulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-track {
+            animation: trackPulse 1.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-capcut-bg text-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- TOP HEADER / TOOLBAR -->
+    <header class="h-12 bg-capcut-panel border-b border-capcut-border flex items-center justify-between px-4 z-30 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center font-black text-white text-base shadow-lg shadow-blue-500/30">
+                    N
+                </div>
+                <span class="font-bold tracking-wide text-base bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                    Naol Editer <span class="text-xs px-1.5 py-0.5 rounded bg-blue-600/30 text-blue-400 font-semibold border border-blue-500/30">PRO</span>
+                </span>
+            </div>
+            <div class="h-4 w-[1px] bg-gray-700 mx-2"></div>
+            <span id="projectName" class="text-xs text-gray-400 hover:text-white cursor-pointer transition">Project_01_Cinematic.mp4</span>
+        </div>
+
+        <!-- Middle Quick Controls -->
+        <div class="hidden md:flex items-center space-x-4 text-xs font-medium text-gray-300">
+            <button id="btnUndo" class="hover:text-blue-400 flex items-center gap-1 transition"><i class="fa-solid font-xs fa-rotate-left"></i> Undo</button>
+            <button id="btnRedo" class="hover:text-blue-400 flex items-center gap-1 transition"><i class="fa-solid font-xs fa-rotate-right"></i> Redo</button>
+            <div class="h-4 w-[1px] bg-gray-700"></div>
+            <span class="text-gray-400">Aspect Ratio:</span>
+            <select id="aspectRatioSelect" onchange="changeAspectRatio(this.value)" class="bg-capcut-card text-xs border border-capcut-border rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500">
+                <option value="9:16">9:16 (TikTok / Reels)</option>
+                <option value="16:9">16:9 (YouTube / TV)</option>
+                <option value="1:1">1:1 (Instagram Feed)</option>
+                <option value="4:5">4:5 (Portrait)</option>
+            </select>
+        </div>
+
+        <!-- Keyframe & Export -->
+        <div class="flex items-center space-x-3">
+            <button onclick="addKeyframe()" class="p-1.5 px-3 bg-capcut-card hover:bg-gray-700 border border-capcut-border rounded-lg text-xs font-semibold flex items-center gap-1.5 transition text-gray-200">
+                <i class="fa-solid fa-diamond text-blue-400 text-xs"></i> Keyframe
+            </button>
+            <button onclick="toggleModal('modalExport')" class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/20 flex items-center gap-2 transition transform active:scale-95">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i> Export 4K
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN MIDDLE SECTION (CANVAS + SIDE PANELS) -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- MAIN PREVIEW CANVAS AREA -->
+        <div class="flex-1 bg-black flex flex-col justify-center items-center relative overflow-hidden group">
+            
+            <!-- Video Canvas Container -->
+            <div id="canvasContainer" class="relative max-h-[85%] aspect-[9/16] bg-capcut-panel rounded-xl overflow-hidden shadow-2xl border border-capcut-border/50 flex items-center justify-center transition-all duration-300">
+                
+                <!-- Main Render Canvas -->
+                <canvas id="mainCanvas" class="w-full h-full object-contain"></canvas>
+
+                <!-- Hidden Source Video Element -->
+                <video id="sourceVideo" class="hidden" loop crossorigin="anonymous" playsinline></video>
+
+                <!-- Tracking Bounding Box Overlay UI -->
+                <div id="trackingOverlay" class="absolute inset-0 pointer-events-none hidden">
+                    <div id="targetBox" class="absolute border-2 border-cyan-400 rounded bg-cyan-400/10 transition-all duration-75 flex items-center justify-center shadow-[0_0_15px_rgba(0,242,254,0.5)]">
+                        <span class="absolute -top-6 bg-cyan-500 text-black font-bold text-[10px] px-1.5 py-0.5 rounded shadow flex items-center gap-1">
+                            <i class="fa-solid fa-crosshairs animate-spin"></i> AI TRACKING: <span id="trackingLabel">FACE</span>
+                        </span>
+                        <!-- Corner Crosshairs -->
+                        <div class="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 border-white"></div>
+                        <div class="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 border-white"></div>
+                        <div class="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 border-white"></div>
+                        <div class="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 border-white"></div>
+                    </div>
+                </div>
+
+                <!-- Live Subtitle Display Overlay -->
+                <div id="subtitleOverlay" class="absolute bottom-12 inset-x-4 text-center pointer-events-none z-10 transition-all">
+                    <span id="subtitleText" class="inline-block px-4 py-1.5 text-lg font-bold text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] bg-black/40 rounded-lg backdrop-blur-sm transition-all duration-200">
+                        <!-- Subtitles render here -->
+                    </span>
+                </div>
+
+                <!-- Canvas Control Overlay Buttons -->
+                <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2 z-20">
+                    <button onclick="toggleFullscreen()" class="p-2 rounded-lg bg-black/60 text-white hover:bg-black/80 transition text-xs backdrop-blur-md" title="Fullscreen">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PLAYER FLOATING CONTROLS -->
+            <div class="absolute bottom-3 glass-panel px-6 py-2 rounded-full flex items-center space-x-6 z-20 shadow-2xl border border-white/10">
+                <span id="currentTimecode" class="text-xs font-mono text-gray-300">00:00:00</span>
+                <div class="flex items-center space-x-4">
+                    <button onclick="stepFrame(-1)" class="text-gray-400 hover:text-white transition text-xs"><i class="fa-solid fa-backward-step"></i></button>
+                    <button id="btnPlayPause" class="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition shadow-lg shadow-blue-500/40 transform active:scale-90">
+                        <i id="playIcon" class="fa-solid fa-play text-sm ml-0.5"></i>
+                    </button>
+                    <button onclick="stepFrame(1)" class="text-gray-400 hover:text-white transition text-xs"><i class="fa-solid fa-forward-step"></i></button>
+                </div>
+                <span id="totalTimecode" class="text-xs font-mono text-gray-500">00:00:15</span>
+            </div>
+        </div>
+
+        <!-- DYNAMIC RIGHT EDITING PANEL -->
+        <div id="sidePanel" class="w-80 bg-capcut-panel border-l border-capcut-border flex flex-col z-20 transition-all duration-300 transform translate-x-0">
+            <!-- Panel Header -->
+            <div class="h-11 px-4 border-b border-capcut-border flex items-center justify-between bg-capcut-card">
+                <h3 id="panelTitle" class="font-bold text-xs uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Editing Controls
+                </h3>
+                <button onclick="closeSidePanel()" class="text-gray-400 hover:text-white text-xs p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Panel Content Container -->
+            <div id="panelContent" class="flex-1 overflow-y-auto p-4 space-y-5">
+                <!-- Content injected dynamically based on selected bottom tab -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MULTI-TRACK TIMELINE SECTION -->
+    <div class="h-48 bg-capcut-panel border-t border-capcut-border flex flex-col relative z-20 shrink-0">
+        
+        <!-- Timeline Controls Header -->
+        <div class="h-8 bg-capcut-card border-b border-capcut-border px-4 flex items-center justify-between text-xs text-gray-400">
+            <div class="flex items-center space-x-3">
+                <button onclick="triggerImportMedia()" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 font-medium transition">
+                    <i class="fa-solid fa-plus text-xs"></i> Add Media
+                </button>
+                <input type="file" id="mediaInput" accept="video/*,audio/*,image/*" class="hidden" onchange="handleImportMedia(event)">
+                <button onclick="splitTrack()" class="hover:text-white flex items-center gap-1 transition"><i class="fa-solid fa-scissors text-xs"></i> Split</button>
+                <button onclick="freezeFrame()" class="hover:text-white flex items-center gap-1 transition"><i class="fa-solid fa-snowflake text-xs"></i> Freeze</button>
+                <button onclick="captureFrame()" class="hover:text-white flex items-center gap-1 transition"><i class="fa-solid fa-camera text-xs"></i> Snapshot</button>
+                <button onclick="deleteClip()" class="hover:text-red-400 flex items-center gap-1 transition"><i class="fa-solid fa-trash text-xs"></i> Delete</button>
+            </div>
+            
+            <!-- Zoom Slider -->
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-magnifying-glass-minus text-[10px]"></i>
+                <input id="timelineZoom" type="range" min="1" max="5" value="2" class="range-slider w-20">
+                <i class="fa-solid fa-magnifying-glass-plus text-[10px]"></i>
+            </div>
+        </div>
+
+        <!-- Timeline Tracks Container -->
+        <div id="timelineScroll" class="flex-1 overflow-x-auto overflow-y-auto relative p-2 space-y-2 select-none cursor-pointer" onclick="handleTimelineClick(event)">
+            
+            <!-- Playhead Indicator Line -->
+            <div id="playhead" class="absolute top-0 bottom-0 w-[2px] bg-red-500 z-30 pointer-events-none left-28 shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+                <div class="w-3 h-3 bg-red-500 -ml-[5px] rotate-45 rounded-sm"></div>
+            </div>
+
+            <!-- Time Ruler Bar -->
+            <div class="h-5 flex items-center text-[10px] text-gray-500 font-mono border-b border-gray-800 pb-1 ml-24 min-w-[1000px]">
+                <span class="w-20">00:00</span>
+                <span class="w-20">00:03</span>
+                <span class="w-20">00:06</span>
+                <span class="w-20">00:09</span>
+                <span class="w-20">00:12</span>
+                <span class="w-20">00:15</span>
+            </div>
+
+            <!-- TRACK 1: Video Track -->
+            <div class="flex items-center space-x-2 min-w-[1000px]">
+                <div class="w-20 shrink-0 text-xs font-semibold text-gray-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-film text-blue-400 text-xs"></i> Video
+                </div>
+                <div class="flex-1 h-10 bg-capcut-card/60 rounded-md relative overflow-hidden border border-gray-800 flex items-center px-1">
+                    <!-- Main Clip Box -->
+                    <div id="clipVideo" class="h-8 bg-blue-900/60 border border-blue-500/50 rounded flex items-center px-2 text-xs text-blue-200 font-medium relative cursor-pointer shadow-md hover:border-blue-400 transition" style="width: 75%; left: 0%;">
+                        <i class="fa-solid fa-file-video mr-2 text-blue-400"></i> Sample_Motion_4K.mp4
+                        <!-- Keyframe indicator dots -->
+                        <div id="keyframeTrack" class="absolute inset-0 flex items-center px-4 pointer-events-none"></div>
+                        <!-- Handles -->
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-400/50 rounded-l cursor-ew-resize"></div>
+                        <div class="absolute right-0 top-0 bottom-0 w-1.5 bg-blue-400/50 rounded-r cursor-ew-resize"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRACK 2: Text / Captions Track -->
+            <div class="flex items-center space-x-2 min-w-[1000px]">
+                <div class="w-20 shrink-0 text-xs font-semibold text-gray-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-closed-captioning text-yellow-400 text-xs"></i> Text
+                </div>
+                <div class="flex-1 h-8 bg-capcut-card/40 rounded-md relative overflow-hidden border border-gray-800/80 flex items-center px-1">
+                    <div id="clipText" class="h-6 bg-yellow-900/40 border border-yellow-500/50 rounded flex items-center px-2 text-[11px] text-yellow-200 relative cursor-pointer" style="width: 60%; left: 10%;">
+                        <i class="fa-solid fa-align-left mr-1.5 text-yellow-400"></i> Auto Captions (Amharic/Oromo)
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRACK 3: Audio Track -->
+            <div class="flex items-center space-x-2 min-w-[1000px]">
+                <div class="w-20 shrink-0 text-xs font-semibold text-gray-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-music text-emerald-400 text-xs"></i> Audio
+                </div>
+                <div class="flex-1 h-8 bg-capcut-card/40 rounded-md relative overflow-hidden border border-gray-800/80 flex items-center px-1">
+                    <div id="clipAudio" class="h-6 bg-emerald-900/40 border border-emerald-500/50 rounded flex items-center px-2 text-[11px] text-emerald-200 relative cursor-pointer" style="width: 80%; left: 0%;">
+                        <i class="fa-solid fa-waveform mr-1.5 text-emerald-400"></i> Background_Beat_128bpm.mp3
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- CAPCUT BOTTOM NAVIGATION BAR -->
+    <nav class="h-16 bg-capcut-panel border-t border-capcut-border flex items-center justify-around px-2 z-30 shrink-0 overflow-x-auto">
+        
+        <button onclick="switchTab('edit')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 active-nav transition">
+            <i class="fa-solid fa-scissors text-base mb-1"></i>
+            <span class="text-[10px] font-medium">Edit</span>
+        </button>
+
+        <button onclick="switchTab('capcutPlus')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-wand-magic-sparkles text-base mb-1 text-cyan-400"></i>
+            <span class="text-[10px] font-medium text-cyan-400">CapCut+ AI</span>
+        </button>
+
+        <button onclick="switchTab('tracking')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-crosshairs text-base mb-1 text-blue-400"></i>
+            <span class="text-[10px] font-medium">Tracking</span>
+        </button>
+
+        <button onclick="switchTab('audio')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-sliders text-base mb-1"></i>
+            <span class="text-[10px] font-medium">Audio FX</span>
+        </button>
+
+        <button onclick="switchTab('text')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-font text-base mb-1"></i>
+            <span class="text-[10px] font-medium">Text</span>
+        </button>
+
+        <button onclick="switchTab('captions')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-closed-captioning text-base mb-1 text-yellow-400"></i>
+            <span class="text-[10px] font-medium text-yellow-400">Captions</span>
+        </button>
+
+        <button onclick="switchTab('quality')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-sparkles text-base mb-1 text-purple-400"></i>
+            <span class="text-[10px] font-medium text-purple-400">Quality AI</span>
+        </button>
+
+        <button onclick="switchTab('adjust')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-circle-half-stroke text-base mb-1"></i>
+            <span class="text-[10px] font-medium">Adjust</span>
+        </button>
+
+        <button onclick="switchTab('effects')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-bolt text-base mb-1"></i>
+            <span class="text-[10px] font-medium">Effects</span>
+        </button>
+
+        <button onclick="switchTab('filters')" class="nav-btn flex flex-col items-center justify-center w-16 text-gray-400 hover:text-blue-400 transition">
+            <i class="fa-solid fa-icons text-base mb-1"></i>
+            <span class="text-[10px] font-medium">Filters</span>
+        </button>
+
+    </nav>
+
+    <!-- EXPORT MODAL -->
+    <div id="modalExport" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-capcut-panel border border-capcut-border rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl relative">
+            <button onclick="toggleModal('modalExport')" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="flex items-center space-x-3">
+                <div class="p-3 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
+                    <i class="fa-solid fa-circle-check text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-white">Export Video Settings</h3>
+                    <p class="text-xs text-gray-400">Naol Editer Ultra Rendering Engine</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <label class="block text-gray-400 mb-1 font-medium">Resolution</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="py-2 rounded-lg bg-capcut-card border border-capcut-border text-center hover:border-blue-500">720p</button>
+                        <button class="py-2 rounded-lg bg-capcut-card border border-capcut-border text-center hover:border-blue-500">1080p</button>
+                        <button class="py-2 rounded-lg bg-blue-600 border border-blue-500 font-bold text-white text-center shadow-lg shadow-blue-500/30">2K/4K</button>
+                        <button class="py-2 rounded-lg bg-capcut-card border border-capcut-border text-center hover:border-blue-500">8K AI</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 mb-1 font-medium">Frame Rate</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="py-2 rounded-lg bg-capcut-card border border-capcut-border text-center hover:border-blue-500">24 fps</button>
+                        <button class="py-2 rounded-lg bg-capcut-card border border-capcut-border text-center hover:border-blue-500">30 fps</button>
+                        <button class="py-2 rounded-lg bg-blue-600 border border-blue-500 font-bold text-white text-center">60 fps Ultra</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 mb-1 font-medium">Format & Codec</label>
+                    <select class="w-full bg-capcut-card border border-capcut-border rounded-lg p-2.5 text-white focus:outline-none focus:border-blue-500">
+                        <option>MP4 (H.264 / HEVC) - Recommended</option>
+                        <option>MOV (ProRes High Quality)</option>
+                        <option>GIF Animation</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="btnStartExport" onclick="startExportProcess()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 hover:opacity-90 transition">
+                Start 4K Rendering
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION ENGINE -->
+    <script>
+        /* ==========================================================================
+           STATE MANAGEMENT & APP CONSTANTS
+           ========================================================================== */
+        const state = {
+            isPlaying: false,
+            currentTime: 0,
+            duration: 15, // seconds
+            aspectRatio: '9:16',
+            activeTab: 'edit',
+            keyframes: [], // keyframe timestamps
+            
+            // Tracking Settings
+            tracking: {
+                active: false,
+                target: 'Face',
+                box: { x: 30, y: 25, w: 40, h: 35 },
+                dx: 0.3, dy: 0.2
+            },
+
+            // Audio FX Settings
+            audio: {
+                highPass: 0, lowPass: 100, deEsser: false, vocalWarmth: 50,
+                bassEQ: 0, midEQ: 0, clarityEQ: 20, trebleEQ: 0,
+                reverb: 15, echo: 0, noiseReduction: true, volume: 100
+            },
+
+            // Quality AI Enhancement Settings
+            quality: {
+                upscale4k: true, frameInterpolation: true, denoise: 30,
+                hdrDynamic: 40, skinEnhance: 60, opticalClarity: 50,
+                lensFix: false, stabilizer: true, smartColor: 50, cinematicBoost: 40
+            },
+
+            // Color Adjustments
+            adjustments: {
+                exposure: 0, contrast: 0, highlights: 0, shadows: 0,
+                saturation: 0, temp: 0, tint: 0, sharpness: 10, vignette: 0, dynamicRange: 20
+            },
+
+            // Quality Effects & Filters
+            effects: {
+                activeEffect: 'none',
+                strength: 50
+            },
+
+            // Captions State
+            captions: {
+                language: 'amharic',
+                template: 'glowing',
+                generated: [
+                    { time: 0, text: "እንኳን ወደ ናኦል ኤዲተር በደህና መጡ!" },
+                    { time: 3, text: "Akkam jirtu, Naol Editer irratti simatamtu!" },
+                    { time: 6, text: "Experience Ultra-Fast CapCut Video Editing" },
+                    { time: 9, text: "AI Motion Tracking & 4K Quality Enhancement" },
+                    { time: 12, text: "የላቀ የቪዲዮ ማቀናበሪያ ሶፍትዌር" }
+                ]
+            }
+        };
+
+        /* ==========================================================================
+           CANVAS & ANIMATION LOOP ENGINE
+           ========================================================================== */
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let animFrameId = null;
+
+        function initCanvas() {
+            canvas.width = 720;
+            canvas.height = 1280;
+            renderFrame();
+        }
+
+        function renderFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const time = state.currentTime;
+            
+            // Dynamic Gradient Background simulating high-end camera footage
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            const hue1 = (time * 20) % 360;
+            const hue2 = (time * 30 + 120) % 360;
+            grad.addColorStop(0, `hsl(${hue1}, 60%, 15%)`);
+            grad.addColorStop(0.5, `hsl(${hue2}, 70%, 25%)`);
+            grad.addColorStop(1, '#05070a');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Render Dynamic Moving Subject (Human Portrait Simulation)
+            const centerX = canvas.width / 2 + Math.sin(time * 2) * 40;
+            const centerY = canvas.height / 2 - 50 + Math.cos(time * 1.5) * 20;
+
+            // Apply Adjustments & Filters
+            ctx.filter = `
+                brightness(${100 + Number(state.adjustments.exposure)}%)
+                contrast(${100 + Number(state.adjustments.contrast)}%)
+                saturate(${100 + Number(state.adjustments.saturation)}%)
+                blur(${state.effects.activeEffect === 'softFocus' ? '4px' : '0px'})
+            `;
+
+            // Draw Head / Face
+            ctx.fillStyle = '#ffdbac';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 60, 90, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Eyes
+            ctx.fillStyle = '#1f2937';
+            ctx.beginPath();
+            ctx.arc(centerX - 35, centerY - 80, 10, 0, Math.PI * 2);
+            ctx.arc(centerX + 35, centerY - 80, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Torso
+            ctx.fillStyle = '#2563eb';
+            ctx.beginPath();
+            ctx.moveTo(centerX - 120, centerY + 250);
+            ctx.lineTo(centerX + 120, centerY + 250);
+            ctx.lineTo(centerX + 90, centerY + 60);
+            ctx.lineTo(centerX - 90, centerY + 60);
+            ctx.closePath();
+            ctx.fill();
+
+            // Reset Filter
+            ctx.filter = 'none';
+
+            // Apply FX Overlays
+            if (state.effects.activeEffect === 'edgeGlow') {
+                ctx.strokeStyle = '#00f2fe';
+                ctx.lineWidth = 6;
+                ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+            } else if (state.effects.activeEffect === 'vintageGrain') {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                for (let i = 0; i < 500; i++) {
+                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+                }
+            }
+
+            // Update Real-Time AI Tracking Coordinates if Active
+            if (state.tracking.active) {
+                updateTrackingOverlay(centerX, centerY);
+            }
+
+            // Render Subtitles
+            renderSubtitles();
+
+            // Request Next Frame if Playing
+            if (state.isPlaying) {
+                state.currentTime += 0.033;
+                if (state.currentTime >= state.duration) {
+                    state.currentTime = 0;
+                }
+                updateTimecodeDisplay();
+                updatePlayheadUI();
+                animFrameId = requestAnimationFrame(renderFrame);
+            }
+        }
+
+        function updateTrackingOverlay(centerX, centerY) {
+            const overlay = document.getElementById('trackingOverlay');
+            const targetBox = document.getElementById('targetBox');
+            overlay.classList.remove('hidden');
+
+            const boxW = 35;
+            const boxH = 25;
+            const posX = ((centerX / canvas.width) * 100) - (boxW / 2);
+            const posY = (((centerY - 60) / canvas.height) * 100) - (boxH / 2);
+
+            targetBox.style.left = `${posX}%`;
+            targetBox.style.top = `${posY}%`;
+            targetBox.style.width = `${boxW}%`;
+            targetBox.style.height = `${boxH}%`;
+        }
+
+        function renderSubtitles() {
+            const subElem = document.getElementById('subtitleText');
+            const currentSub = state.captions.generated.find(c => state.currentTime >= c.time && state.currentTime < c.time + 3);
+            
+            if (currentSub) {
+                subElem.innerText = currentSub.text;
+                subElem.classList.remove('hidden');
+            } else {
+                subElem.classList.add('hidden');
+            }
+        }
+
+        /* ==========================================================================
+           UI & SIDE PANEL DYNAMIC GENERATOR
+           ========================================================================== */
+        
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('text-blue-400', 'font-bold'));
+            
+            const sidePanel = document.getElementById('sidePanel');
+            const titleElem = document.getElementById('panelTitle');
+            const contentElem = document.getElementById('panelContent');
+
+            sidePanel.classList.remove('translate-x-full');
+
+            switch (tabName) {
+                case 'tracking':
+                    titleElem.innerHTML = `<i class="fa-solid fa-crosshairs"></i> Advanced Motion Tracking`;
+                    contentElem.innerHTML = renderTrackingPanel();
+                    break;
+
+                case 'audio':
+                    titleElem.innerHTML = `<i class="fa-solid fa-sliders"></i> Audio FX & Master EQ`;
+                    contentElem.innerHTML = renderAudioPanel();
+                    break;
+
+                case 'quality':
+                    titleElem.innerHTML = `<i class="fa-solid fa-sparkles"></i> 10 AI Quality Enhancers`;
+                    contentElem.innerHTML = renderQualityPanel();
+                    break;
+
+                case 'adjust':
+                    titleElem.innerHTML = `<i class="fa-solid fa-circle-half-stroke"></i> Professional Color Tools`;
+                    contentElem.innerHTML = renderAdjustPanel();
+                    break;
+
+                case 'captions':
+                    titleElem.innerHTML = `<i class="fa-solid fa-closed-captioning"></i> Auto Captions (Amharic/Oromo)`;
+                    contentElem.innerHTML = renderCaptionsPanel();
+                    break;
+
+                case 'effects':
+                    titleElem.innerHTML = `<i class="fa-solid fa-bolt"></i> CapCut Quality Effects`;
+                    contentElem.innerHTML = renderEffectsPanel();
+                    break;
+
+                case 'capcutPlus':
+                    titleElem.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> CapCut+ AI Studio`;
+                    contentElem.innerHTML = renderCapCutPlusPanel();
+                    break;
+
+                case 'text':
+                    titleElem.innerHTML = `<i class="fa-solid fa-font"></i> Text & Titles`;
+                    contentElem.innerHTML = renderTextPanel();
+                    break;
+
+                case 'filters':
+                    titleElem.innerHTML = `<i class="fa-solid fa-icons"></i> Cinematic Filters`;
+                    contentElem.innerHTML = renderFiltersPanel();
+                    break;
+
+                default:
+                    titleElem.innerHTML = `<i class="fa-solid fa-sliders"></i> Basic Editing Tools`;
+                    contentElem.innerHTML = renderDefaultPanel();
+                    break;
+            }
+        }
+
+        /* TRACKING PANEL HTML */
+        function renderTrackingPanel() {
+            return `
+                <div class="space-y-4 text-xs">
+                    <div class="p-3 bg-blue-900/20 rounded-xl border border-blue-500/30">
+                        <p class="text-blue-300 font-medium"><i class="fa-solid fa-circle-info mr-1"></i> Smart AI Body & Object Tracking</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Select a target anatomical keypoint or object to attach graphics, effects, or blur.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-2">Tracking Targets</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            ${['Face', 'Eyes', 'Nose', 'Mouth', 'Head', 'Hand (Palm)', 'Fingertip', 'Left Wrist', 'Right Wrist', 'Torso', 'Full Body', 'Feet', 'Object', 'Tap Point'].map(target => `
+                                <button onclick="setTrackingTarget('${target}')" class="p-2 rounded-lg bg-capcut-card border ${state.tracking.target === target ? 'border-blue-500 text-blue-400 font-bold' : 'border-capcut-border text-gray-300'} hover:border-blue-500 text-left transition flex items-center justify-between">
+                                    <span>${target}</span>
+                                    ${state.tracking.target === target ? '<i class="fa-solid fa-circle-check text-blue-400"></i>' : ''}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-capcut-border space-y-2">
+                        <button onclick="startTracking()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20">
+                            <i class="fa-solid fa-play"></i> Start Auto Scan & Track
+                        </button>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="stopTracking()" class="py-2 bg-capcut-card border border-capcut-border hover:bg-red-900/30 text-red-400 font-semibold rounded-lg transition">Stop</button>
+                            <button onclick="clearTracking()" class="py-2 bg-capcut-card border border-capcut-border hover:bg-gray-700 text-gray-300 font-semibold rounded-lg transition">Clear Track</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* AUDIO PANEL HTML */
+        function renderAudioPanel() {
+            return `
+                <div class="space-y-4 text-xs">
+                    <div class="flex items-center justify-between p-2.5 bg-capcut-card rounded-lg border border-capcut-border">
+                        <span class="font-medium text-gray-200">AI Noise Reduction</span>
+                        <input type="checkbox" ${state.audio.noiseReduction ? 'checked' : ''} onchange="state.audio.noiseReduction = this.checked" class="w-4 h-4 accent-blue-600">
+                    </div>
+
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-gray-300 uppercase tracking-wider text-[10px]">Volume & Dynamics</h4>
+                        <div>
+                            <div class="flex justify-between text-gray-400 mb-1"><span>Gain Volume</span><span>${state.audio.volume}%</span></div>
+                            <input type="range" min="0" max="200" value="${state.audio.volume}" oninput="state.audio.volume=this.value" class="range-slider w-full">
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 pt-2 border-t border-capcut-border">
+                        <h4 class="font-bold text-gray-300 uppercase tracking-wider text-[10px]">Filter & Vocal Enhancers</h4>
+                        
+                        <div>
+                            <div class="flex justify-between text-gray-400 mb-1"><span>High-Pass Filter</span><span>${state.audio.highPass} Hz</span></div>
+                            <input type="range" min="0" max="500" value="${state.audio.highPass}" oninput="state.audio.highPass=this.value" class="range-slider w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-gray-400 mb-1"><span>Low-Pass Filter</span><span>${state.audio.lowPass}%</span></div>
+                            <input type="range" min="0" max="100" value="${state.audio.lowPass}" oninput="state.audio.lowPass=this.value" class="range-slider w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-gray-400 mb-1"><span>Vocal Warmth</span><span>${state.audio.vocalWarmth}%</span></div>
+                            <input type="range" min="0" max="100" value="${state.audio.vocalWarmth}" oninput="state.audio.vocalWarmth=this.value" class="range-slider w-full">
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 pt-2 border-t border-capcut-border">
+                        <h4 class="font-bold text-gray-300 uppercase tracking-wider text-[10px]">4-Band Equalizer (EQ)</h4>
+                        ${['Bass EQ', 'Midrange EQ', 'Clarity EQ', 'Treble EQ'].map(eq => `
+                            <div>
+                                <div class="flex justify-between text-gray-400 mb-1"><span>${eq}</span><span>+2 dB</span></div>
+                                <input type="range" min="-12" max="12" value="2" class="range-slider w-full">
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="space-y-3 pt-2 border-t border-capcut-border">
+                        <h4 class="font-bold text-gray-300 uppercase tracking-wider text-[10px]">Reverb & Delay Mix</h4>
+                        <div>
+                            <div class="flex justify-between text-gray-400 mb-1"><span>Studio Reverb</span><span>${state.audio.reverb}%</span></div>
+                            <input type="range" min="0" max="100" value="${state.audio.reverb}" oninput="state.audio.reverb=this.value" class="range-slider w-full">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* QUALITY ENHANCERS PANEL HTML */
+        function renderQualityPanel() {
+            const tools = [
+                { id: 'upscale4k', label: '4K AI Upscaler', desc: 'Detail Restoration Neural Network' },
+                { id: 'frameInterpolation', label: 'AI Frame Interpolator (60fps)', desc: 'Smooth Optical Flow Motion' },
+                { id: 'denoise', label: 'Temporal Denoise', desc: 'Remove Low-Light Grain & Artifacts' },
+                { id: 'hdrDynamic', label: 'HDR Dynamic Color', desc: 'Expand Luminance & Contrast Range' },
+                { id: 'skinEnhance', label: 'Face & Skin Detail Enhancer', desc: 'Subtle Smoothing & Eye Brightening' },
+                { id: 'opticalClarity', label: 'Optical Clarity Boost', desc: 'Enhance Edges & Fine Textures' },
+                { id: 'lensFix', label: 'Lens Distortion Fix', desc: 'Correct Wide-Angle Distortion' },
+                { id: 'stabilizer', label: 'Camera Shake Stabilizer', desc: 'Gyroscope Auto-Stabilization' },
+                { id: 'smartColor', label: 'Smart Color/Tone Balance', desc: 'AI Automatic Exposure Balance' },
+                { id: 'cinematicBoost', label: 'Cinematic Color Enhancer', desc: 'Hollywood Film Look Pipeline' }
+            ];
+
+            return `
+                <div class="space-y-3 text-xs">
+                    <div class="p-3 bg-purple-900/20 rounded-xl border border-purple-500/30">
+                        <p class="text-purple-300 font-medium"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI Neural Quality Pipeline</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Accelerated video enhancement powered by Naol AI.</p>
+                    </div>
+
+                    ${tools.map(tool => `
+                        <div class="p-3 bg-capcut-card rounded-xl border border-capcut-border flex items-center justify-between">
+                            <div>
+                                <h5 class="font-bold text-gray-200">${tool.label}</h5>
+                                <p class="text-[10px] text-gray-400">${tool.desc}</p>
+                            </div>
+                            <input type="checkbox" ${state.quality[tool.id] ? 'checked' : ''} onchange="state.quality['${tool.id}'] = this.checked" class="w-4 h-4 accent-purple-600">
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        /* COLOR ADJUSTMENTS PANEL HTML */
+        function renderAdjustPanel() {
+            return `
+                <div class="space-y-4 text-xs">
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-gray-300 uppercase tracking-wider text-[10px]">Primary Color Correction</h4>
+                        
+                        <div>
+                            <div class="flex justify-between text-gray-400 mb-1"><span>Exposure</span><span id="valExp">${state.adjustments.exposure}</span></div>
+                            <input type="range" min="-50" max="50" value="${state.adjustments.exposure}" oninput="state.adjustments.exposure=this.value; document.getElementById('valExp').innerText=this.value; renderFrame();" class="range-slider w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-gray-400 mb-1"><span>Contrast</span><span id="valCon">${state.adjustments.contrast}</span></div>
+                            <input type="range" min="-50" max="50" value="${state.adjustments.contrast}" oninput="state.adjustments.contrast=this.value; document.getElementById('valCon').innerText=this.value; renderFrame();" class="range-slider w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-gray-400 mb-1"><span>Saturation</span><span id="valSat">${state.adjustments.saturation}</span></div>
+                            <input type="range" min="-50" max="50" value="${state.adjustments.saturation}" oninput="state.adjustments.saturation=this.value; document.getElementById('valSat').innerText=this.value; renderFrame();" class="range-slider w-full">
+                        </div>
+                    </div>
+
+                    <!-- 3-Way Color Wheels Preview -->
+                    <div class="pt-3 border-t border-capcut-border space-y-2">
+                        <h4 class="font-bold text-gray-300 uppercase tracking-wider text-[10px]">3-Way Color Wheels</h4>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <div class="w-16 h-16 mx-auto color-wheel border-2 border-white/20 mb-1"></div>
+                                <span class="text-[10px] text-gray-400">Shadows</span>
+                            </div>
+                            <div>
+                                <div class="w-16 h-16 mx-auto color-wheel border-2 border-white/20 mb-1"></div>
+                                <span class="text-[10px] text-gray-400">Midtones</span>
+                            </div>
+                            <div>
+                                <div class="w-16 h-16 mx-auto color-wheel border-2 border-white/20 mb-1"></div>
+                                <span class="text-[10px] text-gray-400">Highlights</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* CAPTIONS PANEL HTML */
+        function renderCaptionsPanel() {
+            return `
+                <div class="space-y-4 text-xs">
+                    <div class="p-3 bg-yellow-900/20 rounded-xl border border-yellow-500/30">
+                        <p class="text-yellow-300 font-medium"><i class="fa-solid fa-closed-captioning mr-1"></i> Multi-Lingual Auto Speech-to-Text</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Supports Amharic (አማርኛ), Afaan Oromoo, and English speech generator.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-1">Language Selection</label>
+                        <select onchange="state.captions.language=this.value" class="w-full bg-capcut-card border border-capcut-border rounded-lg p-2 text-white">
+                            <option value="amharic">Amharic (አማርኛ)</option>
+                            <option value="oromo">Afaan Oromoo</option>
+                            <option value="english">English (US/UK)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-300 font-semibold mb-2">15 Captions Styling Templates</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            ${[
+                                'Glowing Neon', 'TikTok Yellow Highlight', 'Cinematic Subtitles', 
+                                'Bold Kinetic', 'Retro VHS', 'Typewriter Effect', 'Pop-In Bounce', 
+                                'Gradient Outline', 'Subtle Blur Shadow', 'Ethiopian Flag Accent',
+                                'Minimalist White', 'Comic Pop', 'Gradient Wave', 'Cyberpunk Blue', 'Soft Pastel'
+                            ].map(tpl => `
+                                <button onclick="selectCaptionTemplate('${tpl}')" class="p-2.5 rounded-lg bg-capcut-card border border-capcut-border hover:border-yellow-500 text-left transition">
+                                    <span class="block font-bold text-yellow-400 text-xs">${tpl}</span>
+                                    <span class="text-[9px] text-gray-400">Preview style</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <button onclick="generateAutoCaptions()" class="w-full py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Subtitles Now
+                    </button>
+                </div>
+            `;
+        }
+
+        /* EFFECTS PANEL HTML */
+        function renderEffectsPanel() {
+            const effects = [
+                { id: 'edgeGlow', name: 'Edge Glow', icon: 'fa-border-all' },
+                { id: 'softFocus', name: 'Soft Focus', icon: 'fa-eye' },
+                { id: 'hdrGlow', name: 'HDR Glow', icon: 'fa-sun' },
+                { id: 'vintageGrain', name: 'Vintage Film Grain', icon: 'fa-film' },
+                { id: 'motionBlur', name: 'Motion Blur', icon: 'fa-wind' },
+                { id: 'sharpen', name: 'Sharpening', icon: 'fa-triangle-exclamation' }
+            ];
+
+            return `
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    ${effects.map(fx => `
+                        <button onclick="applyEffect('${fx.id}')" class="p-3 bg-capcut-card border ${state.effects.activeEffect === fx.id ? 'border-blue-500 bg-blue-900/30' : 'border-capcut-border'} rounded-xl hover:border-blue-500 transition text-center space-y-1">
+                            <i class="fa-solid ${fx.icon} text-lg text-blue-400"></i>
+                            <span class="block font-medium text-gray-200">${fx.name}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        /* CAPCUT+ AI PANEL */
+        function renderCapCutPlusPanel() {
+            return `
+                <div class="space-y-3 text-xs">
+                    <div class="p-3 bg-cyan-900/20 rounded-xl border border-cyan-500/30">
+                        <h4 class="font-bold text-cyan-300">CapCut+ AI Creative Suite</h4>
+                        <p class="text-gray-400 text-[11px] mt-1">Smart AI Portrait Cutout, Auto Keyframing & Script Generation.</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button onclick="alert('Chroma Key AI Enabled')" class="w-full p-3 bg-capcut-card border border-capcut-border hover:border-cyan-500 rounded-xl text-left flex items-center gap-3">
+                            <i class="fa-solid fa-user-gear text-cyan-400 text-lg"></i>
+                            <div>
+                                <span class="font-bold block text-white">Smart Cutout / Chroma Key</span>
+                                <span class="text-[10px] text-gray-400">Remove background in 1-click</span>
+                            </div>
+                        </button>
+
+                        <button onclick="alert('AI Script Generator Active')" class="w-full p-3 bg-capcut-card border border-capcut-border hover:border-cyan-500 rounded-xl text-left flex items-center gap-3">
+                            <i class="fa-solid fa-robot text-cyan-400 text-lg"></i>
+                            <div>
+                                <span class="font-bold block text-white">AI Script to Video</span>
+                                <span class="text-[10px] text-gray-400">Generate storyboard from text</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* TEXT PANEL HTML */
+        function renderTextPanel() {
+            return `
+                <div class="space-y-3 text-xs">
+                    <button onclick="addTextOverlay()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Add Heading Text
+                    </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        ${['Retro Yellow', 'Glitch Style', 'Cyber Neon', 'Subtle Shadow'].map(style => `
+                            <button onclick="addTextOverlay('${style}')" class="p-3 bg-capcut-card border border-capcut-border hover:border-blue-500 rounded-lg text-center font-bold text-gray-200">
+                                ${style}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        /* FILTERS PANEL HTML */
+        function renderFiltersPanel() {
+            return `
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    ${['Cinematic Teal & Orange', 'Retro Kodachrome', 'Black & White Noir', 'Cyberpunk Vivid', 'Soft Portrait', 'Warm Sun'].map(filter => `
+                        <button onclick="applyFilter('${filter}')" class="p-3 bg-capcut-card border border-capcut-border hover:border-blue-500 rounded-xl text-center font-medium text-gray-300">
+                            ${filter}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        /* DEFAULT FALLBACK PANEL */
+        function renderDefaultPanel() {
+            return `
+                <div class="space-y-3 text-xs text-gray-400">
+                    <p>Select any clip from the timeline or tool from the bottom navigation bar to open editing controls.</p>
+                </div>
+            `;
+        }
+
+        /* ==========================================================================
+           INTERACTIVE ACTION HANDLERS
+           ========================================================================== */
+        
+        document.getElementById('btnPlayPause').addEventListener('click', togglePlay);
+
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            const playIcon = document.getElementById('playIcon');
+            
+            if (state.isPlaying) {
+                playIcon.className = 'fa-solid fa-pause text-sm';
+                renderFrame();
+            } else {
+                playIcon.className = 'fa-solid fa-play text-sm ml-0.5';
+                if (animFrameId) cancelAnimationFrame(animFrameId);
+            }
+        }
+
+        function stepFrame(direction) {
+            state.currentTime = Math.max(0, Math.min(state.duration, state.currentTime + (direction * 0.1)));
+            updateTimecodeDisplay();
+            updatePlayheadUI();
+            renderFrame();
+        }
+
+        function updateTimecodeDisplay() {
+            const mins = Math.floor(state.currentTime / 60).toString().padStart(2, '0');
+            const secs = Math.floor(state.currentTime % 60).toString().padStart(2, '0');
+            const ms = Math.floor((state.currentTime % 1) * 100).toString().padStart(2, '0');
+            document.getElementById('currentTimecode').innerText = `${mins}:${secs}:${ms}`;
+        }
+
+        function updatePlayheadUI() {
+            const playhead = document.getElementById('playhead');
+            const pct = (state.currentTime / state.duration) * 100;
+            playhead.style.left = `calc(6rem + ${pct * 0.8}%)`;
+        }
+
+        function handleTimelineClick(e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left - 96; // 96px is track label width
+            const totalWidth = rect.width - 96;
+            if (clickX >= 0 && totalWidth > 0) {
+                const pct = Math.max(0, Math.min(1, clickX / totalWidth));
+                state.currentTime = pct * state.duration;
+                updateTimecodeDisplay();
+                updatePlayheadUI();
+                renderFrame();
+            }
+        }
+
+        // Keyframe functionality
+        function addKeyframe() {
+            state.keyframes.push(state.currentTime);
+            renderKeyframeMarkers();
+        }
+
+        function renderKeyframeMarkers() {
+            const track = document.getElementById('keyframeTrack');
+            track.innerHTML = state.keyframes.map(kf => {
+                const pct = (kf / state.duration) * 100;
+                return `<div class="absolute w-2 h-2 bg-yellow-400 rotate-45 border border-black" style="left:${pct}%"></div>`;
+            }).join('');
+        }
+
+        // Aspect Ratio Handler
+        function changeAspectRatio(val) {
+            state.aspectRatio = val;
+            const container = document.getElementById('canvasContainer');
+            container.className = `relative max-h-[85%] bg-capcut-panel rounded-xl overflow-hidden shadow-2xl border border-capcut-border/50 flex items-center justify-center transition-all duration-300`;
+            
+            if (val === '9:16') container.classList.add('aspect-[9/16]');
+            else if (val === '16:9') container.classList.add('aspect-[16/9]');
+            else if (val === '1:1') container.classList.add('aspect-square');
+            else if (val === '4:5') container.classList.add('aspect-[4/5]');
+            
+            renderFrame();
+        }
+
+        // Media Import Handlers
+        function triggerImportMedia() {
+            document.getElementById('mediaInput').click();
+        }
+
+        function handleImportMedia(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('projectName').innerText = file.name;
+            }
+        }
+
+        // Timeline Action Tools
+        function splitTrack() {
+            alert(`Clip split at timestamp: ${state.currentTime.toFixed(2)}s`);
+        }
+
+        function freezeFrame() {
+            alert(`Freeze frame captured at: ${state.currentTime.toFixed(2)}s`);
+        }
+
+        function captureFrame() {
+            const link = document.createElement('a');
+            link.download = `Snapshot_${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function deleteClip() {
+            alert('Selected clip deleted');
+        }
+
+        // Tracking Actions
+        function setTrackingTarget(target) {
+            state.tracking.target = target;
+            document.getElementById('trackingLabel').innerText = target.toUpperCase();
+            switchTab('tracking');
+        }
+
+        function startTracking() {
+            state.tracking.active = true;
+            renderFrame();
+        }
+
+        function stopTracking() {
+            state.tracking.active = false;
+            document.getElementById('trackingOverlay').classList.add('hidden');
+        }
+
+        function clearTracking() {
+            stopTracking();
+        }
+
+        // Effects & Filters
+        function applyEffect(fxId) {
+            state.effects.activeEffect = fxId;
+            renderFrame();
+            switchTab('effects');
+        }
+
+        function applyFilter(filterName) {
+            renderFrame();
+        }
+
+        // Subtitles Actions
+        function selectCaptionTemplate(tpl) {
+            state.captions.template = tpl;
+        }
+
+        function generateAutoCaptions() {
+            const btn = event.currentTarget;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Processing AI Audio Transcript...`;
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Subtitles Generated Successfully!`;
+                setTimeout(() => switchTab('captions'), 1000);
+            }, 1200);
+        }
+
+        function addTextOverlay(style = 'Standard') {
+            const subElem = document.getElementById('subtitleText');
+            subElem.innerText = `Sample Title (${style})`;
+            subElem.classList.remove('hidden');
+        }
+
+        function startExportProcess() {
+            const btn = document.getElementById('btnStartExport');
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Rendering 4K Video (45%)...`;
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Rendering Complete! Downloading...`;
+                setTimeout(() => toggleModal('modalExport'), 1500);
+            }, 2500);
+        }
+
+        // Modals Toggle
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+
+        function closeSidePanel() {
+            document.getElementById('sidePanel').classList.add('translate-x-full');
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('canvasContainer');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => console.error(err));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        /* ==========================================================================
+           INITIALIZATION ON LOAD
+           ========================================================================== */
+        window.onload = function() {
+            initCanvas();
+            switchTab('edit');
+        };
+    </script>
+</body>
+</html>
+```
